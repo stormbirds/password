@@ -1,629 +1,1112 @@
+<!-- 喃娘 -->
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>密码生成器</title>
-    <!-- 引入清除历史纪录弹窗的样式 -->
+    <!-- 引入 SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            color: #333;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            font-family: Arial, sans-serif;
-            overflow: hidden; /* 防止页面整体滚动 */
-        }
+    <!-- 引入 CryptoJS -->
+	
+	<!-- 二维码生成文件 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <style>
+/* 基础样式 */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    color: #333;
+    background-color: #f5f5f5;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    overflow: hidden;
+}
 
-        body.dark-mode {
-            background-color: #333;
-            color: #fff;
-        }
+body.dark-mode {
+    background-color: #1e1e1e;
+    color: #fff;
+}
 
-        .password-generator {
-            width: 400px;
-            background-color: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-            padding: 20px;
-            text-align: center;
-            transition: background-color 0.3s ease, color 0.3s ease;
-            max-height: 90vh; /* 限制最大高度 */
-            overflow-y: auto; /* 添加滚动条 */
-        }
+.password-generator {
+    width: 90%;
+    max-width: 400px;
+    background-color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+}
 
-        .dark-mode .password-generator {
-            background-color: #444;
-            color: #fff;
-        }
+.dark-mode .password-generator {
+    background-color: #2c2c2c;
+    color: #fff;
+}
 
-        .password-generator h2 {
-            margin-bottom: 16px;
-            font-size: 22px;
-            color: inherit;
-        }
+.password-generator h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+    font-weight: 600;
+    color: inherit;
+}
 
-        .options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
-        }
+/* 选项区域 */
+.options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
 
-        .options label {
-            display: flex;
-            align-items: center;
-            font-size: 13px;
-            color: inherit;
-        }
+.options label {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: inherit;
+}
 
-        /* Toggle 开关样式 */
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-            margin-right: 6px;
-        }
+/* Toggle 开关样式 */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+    margin-right: 8px;
+}
 
-        .toggle-switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
 
-        .toggle-slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            border-radius: 20px;
-            transition: background-color 0.3s ease;
-        }
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    border-radius: 20px;
+    transition: background-color 0.3s ease;
+}
 
-        .toggle-slider:before {
-            position: absolute;
-            content: '';
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            border-radius: 50%;
-            transition: transform 0.3s ease;
-        }
+.toggle-slider:before {
+    position: absolute;
+    content: '';
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    border-radius: 50%;
+    transition: transform 0.3s ease;
+}
 
-        input:checked + .toggle-slider {
-            background-color: #28a745;
-        }
+input:checked + .toggle-slider {
+    background-color: #007bff;
+}
 
-        input:checked + .toggle-slider:before {
-            transform: translateX(20px);
-        }
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
 
-        .length-selector, .encryption-selector {
-            margin-bottom: 16px;
-        }
+/* 密码长度和加密方式选择器 */
+.length-selector,
+.encryption-selector {
+    margin-bottom: 16px;
+}
 
-        .length-selector label, .encryption-selector label {
-            font-size: 13px;
-            color: inherit;
-            margin-right: 8px;
-        }
+.length-selector label,
+.encryption-selector label {
+    font-size: 14px;
+    color: inherit;
+    margin-right: 8px;
+}
 
-        .length-selector select, .encryption-selector select {
-            padding: 6px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            background-color: #f9f9f9;
-            color: #333;
-            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-        }
+.length-selector select,
+.encryption-selector select {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: #f9f9f9;
+    color: #333;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
 
-        .dark-mode .length-selector select, .dark-mode .encryption-selector select {
-            background-color: #555;
-            color: #fff;
-            border-color: #777;
-        }
+.dark-mode .length-selector select,
+.dark-mode .encryption-selector select {
+    background-color: #444;
+    color: #fff;
+    border-color: #666;
+}
 
-        .password-output {
-            display: flex;
-            align-items: center;
-            margin-bottom: 16px;
-        }
+/* 密码输出区域 */
+.password-output {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
 
-        .password-output input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-            text-align: center;
-            background-color: #f9f9f9;
-            color: #333;
-            transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
-        }
+.password-output input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    text-align: center;
+    background-color: #f9f9f9;
+    color: #333;
+    transition: border-color 0.3s ease, background-color 0.3s ease, color 0.3s ease;
+}
 
-        .dark-mode .password-output input {
-            background-color: #555;
-            color: #fff;
-            border-color: #777;
-        }
+.dark-mode .password-output input {
+    background-color: #444;
+    color: #fff;
+    border-color: #666;
+}
 
-        .password-output button {
-            margin-left: 8px;
-            padding: 10px 12px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background-color 0.2s ease;
-        }
+.password-output button {
+    margin-left: 8px;
+    padding: 10px 12px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s ease;
+}
 
-        .password-output button:hover {
-            background-color: #0056b3;
-        }
+.password-output button:hover {
+    background-color: #0056b3;
+}
 
-        .generate-button button {
-            padding: 10px 16px;
-            background-color: #28a745;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: background-color 0.2s ease;
-        }
+/* 生成按钮 */
+.generate-button button {
+    width: 100%;
+    padding: 12px;
+    background-color: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
 
-        .generate-button button:hover {
-            background-color: #218838;
-        }
+.generate-button button:hover {
+    background-color: #218838;
+}
 
-        .password-strength {
-            margin-bottom: 16px;
-            font-size: 13px;
-            color: inherit;
-        }
+/* 密码强度指示器 */
+.password-strength {
+    margin-bottom: 16px;
+    font-size: 14px;
+    color: inherit;
+}
 
-        #strength-bar {
-            width: 100%;
-            height: 8px;
-            background-color: #eee;
-            border-radius: 4px;
-            margin-top: 4px;
-            overflow: hidden;
-        }
+#strength-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #eee;
+    border-radius: 4px;
+    margin-top: 4px;
+    overflow: hidden;
+}
 
-        #strength-bar::after {
-            content: '';
-            display: block;
-            height: 100%;
-            width: 0;
-            background-color: red;
-            transition: width 0.3s ease, background-color 0.3s ease;
-        }
+#strength-bar::after {
+    content: '';
+    display: block;
+    height: 100%;
+    width: 0;
+    background-color: red;
+    transition: width 0.3s ease, background-color 0.3s ease;
+}
 
-        .password-history {
-            margin-top: 20px;
-        }
+/* 密码历史记录 */
+.password-history {
+    margin-top: 20px;
+}
 
-        .password-history h3 {
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
+.password-history h3 {
+    font-size: 16px;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
 
-        #history-list {
-            list-style: none;
-            padding: 0;
-            max-height: 100px; /* 限制历史记录高度 */
-            overflow-y: auto; /* 添加滚动条 */
-        }
+#history-list {
+    list-style: none;
+    padding: 0;
+    max-height: 100px;
+    overflow-y: auto;
+}
 
-        #history-list li {
-            font-size: 14px;
-            margin-bottom: 4px;
-        }
+#history-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding: 8px;
+    background-color: #f9f9f9;
+    border-radius: 6px;
+    transition: background-color 0.3s ease;
+}
 
-        .loading-animation {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #007bff;
-        }
+.dark-mode #history-list li {
+    background-color: #444;
+}
 
-        .clear-history-button, .save-all-history-button {
-            margin-top: 10px;
-        }
+.history-item-actions button {
+    margin-left: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
 
-        .clear-history-button button, .save-all-history-button button {
-            padding: 8px 12px;
-            background-color: #dc3545;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background-color 0.2s ease;
-            margin: 4px;
-        }
+.history-item-actions button.save {
+    background-color: #17a2b8;
+    color: #fff;
+}
 
-        .clear-history-button button:hover, .save-all-history-button button:hover {
-            background-color: #c82333;
-        }
+.history-item-actions button.delete {
+    background-color: #dc3545;
+    color: #fff;
+}
 
-        .save-password button, .dark-mode-toggle button {
-            padding: 8px 12px;
-            background-color: #17a2b8;
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background-color 0.2s ease;
-            margin: 4px;
-        }
+.history-item-actions button:hover {
+    opacity: 0.9;
+}
 
-        .save-password button:hover, .dark-mode-toggle button:hover {
-            background-color: #138496;
-        }
-    </style>
+/* 底部按钮容器 */
+.bottom-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 两列布局 */
+    gap: 8px; /* 按钮间距 */
+    margin-top: 16px;
+}
+
+/* 底部按钮样式 */
+.bottom-buttons button {
+    width: 100%; /* 按钮宽度占满容器 */
+    padding: 8px; /* 按钮内边距 */
+    font-size: 14px; /* 字体大小 */
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+ 
+ 	/* 清除历史记录按钮 */
+ 	.bottom-buttons .clear-history-button button {
+ 	    background-color: #dc3545;
+ 	    color: #fff;
+ 	}
+ 	
+ 	.bottom-buttons .clear-history-button button:hover {
+ 	    background-color: #c82333;
+ 	}
+ 	
+ 	/* 保存所有历史记录按钮 */
+ 	.bottom-buttons .save-all-history-button button {
+ 	    background-color: #17a2b8;
+ 	    color: #fff;
+ 	}
+ 	
+ 	.bottom-buttons .save-all-history-button button:hover {
+ 	    background-color: #138496;
+ 	}
+ 	
+ 	/* 保存密码按钮 */
+ 	.bottom-buttons .save-password button {
+ 	    background-color: #28a745;
+ 	    color: #fff;
+ 	}
+ 	
+ 	.bottom-buttons .save-password button:hover {
+ 	    background-color: #218838;
+ 	}
+ 	
+ 	/* 暗黑模式切换按钮 */
+ 	.bottom-buttons .dark-mode-toggle button {
+ 	    background-color: #6c757d;
+ 	    color: #fff;
+ 	}
+ 	
+ 	.bottom-buttons .dark-mode-toggle button:hover {
+ 	    background-color: #5a6268;
+ 	}
+ 	  
+ 	  /* 响应式设计 */
+ 	  @media (max-width: 600px) {
+ 	      .password-generator {
+ 	          width: 100%;
+ 	          padding: 16px;
+ 	      }
+ 	  
+ 	      .options {
+ 	          grid-template-columns: 1fr;
+ 	      }
+ 	  
+ 	      .password-output {
+ 	          flex-direction: column;
+ 	      }
+ 	  
+ 	      .password-output button {
+ 	          margin-top: 8px;
+ 	          width: 100%;
+ 	      }
+ 		 }
+  </style>
+  <style>
+	  /* 加密/解密区域样式 */
+	  .encryption-section {
+	      margin-top: 20px;
+	      padding: 15px;
+	      background-color: #f9f9f9;
+	      border-radius: 8px;
+	      border: 1px solid #ddd;
+	  }
+	  
+	  .dark-mode .encryption-section {
+	      background-color: #444;
+	      border-color: #666;
+	  }
+	  
+	  .encryption-input {
+	      display: flex;
+	      gap: 10px;
+	      margin-bottom: 10px;
+	  }
+	  
+	  .encryption-input input {
+	      flex: 1;
+	      padding: 8px;
+	      border: 1px solid #ddd;
+	      border-radius: 6px;
+	      font-size: 14px;
+	  }
+	  
+	  .encryption-input button {
+	      padding: 8px 12px;
+	      background-color: #007bff;
+	      color: #fff;
+	      border: none;
+	      border-radius: 6px;
+	      cursor: pointer;
+	      font-size: 14px;
+	      transition: background-color 0.2s ease;
+	  }
+	  
+	  .encryption-input button:hover {
+	      background-color: #0056b3;
+	  }
+	  
+	  .encryption-output {
+	      display: flex;
+	      align-items: center;
+	      gap: 10px;
+	  }
+	  
+	  .encryption-output input {
+	      flex: 1;
+	      padding: 8px;
+	      border: 1px solid #ddd;
+	      border-radius: 6px;
+	      font-size: 14px;
+	      background-color: #fff;
+	      color: #333;
+	  }
+	  
+	  .encryption-output button {
+	      padding: 8px 12px;
+	      background-color: #28a745;
+	      color: #fff;
+	      border: none;
+	      border-radius: 6px;
+	      cursor: pointer;
+	      font-size: 14px;
+	      transition: background-color 0.2s ease;
+	  }
+	  
+	  .encryption-output button:hover {
+	      background-color: #218838;
+	  }
+  </style>
 </head>
 <body>
-
-   <!-- github链接 -->
+    <!-- GitHub 链接 -->
     <a href="https://github.com/ix520/password" target="_blank" class="github-corner" style="position:fixed;top:0;right:0;" aria-label="View source on GitHub">
-    <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#70B7FD; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
-        <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
-        <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
-        <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
-    </svg>
-</a>
+        <svg width="80" height="80" viewBox="0 0 250 250" style="fill:#70B7FD; color:#fff; position: absolute; top: 0; border: 0; right: 0;" aria-hidden="true">
+            <path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path>
+            <path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path>
+            <path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path>
+        </svg>
+    </a>
 
+    <!-- 密码生成器容器 -->
     <div class="password-generator">
- 
+        <h2>密码生成器</h2>
+        <!-- 选项 -->
+        <div class="options">
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="numbers">
+                    <span class="toggle-slider"></span>
+                </div>
+                纯数字
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="letters">
+                    <span class="toggle-slider"></span>
+                </div>
+                纯字母
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="numbers-letters">
+                    <span class="toggle-slider"></span>
+                </div>
+                数字+字母
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="symbols-letters">
+                    <span class="toggle-slider"></span>
+                </div>
+                符号+字母
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="symbols-numbers">
+                    <span class="toggle-slider"></span>
+                </div>
+                符号+数字
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="symbols-numbers-letters">
+                    <span class="toggle-slider"></span>
+                </div>
+                数字+符号+字母
+            </label>
+            <label>
+                <div class="toggle-switch">
+                    <input type="checkbox" id="uppercase-lowercase">
+                    <span class="toggle-slider"></span>
+                </div>
+                大小写字母
+            </label>
+			<!-- 易混淆字符开关 -->
+			<label>
+			    <div class="toggle-switch">
+			        <input type="checkbox" id="exclude-confusable-chars">
+			        <span class="toggle-slider"></span>
+			    </div>
+			    排除易混淆字符
+			</label>
+            <!-- 一键全选 toggle 开关 -->
+            <label style="grid-column: span 2; margin-bottom: 8px;">
+                <div class="toggle-switch">
+                    <input type="checkbox" id="toggle-all">
+                    <span class="toggle-slider"></span>
+                </div>
+                一键全选
+            </label>
+			
+        </div>
+
+        <!-- 密码长度 -->
+        <div class="length-selector">
+            <label for="length">密码长度：</label>
+            <select id="length">
+                <option value="8">8 位</option>
+                <option value="7">7 位</option>
+                <option value="6">6 位</option>
+                <option value="5">5 位</option>
+                <option value="9">9 位</option>
+                <option value="10">10 位</option>
+                <option value="11">11 位</option>
+                <option value="12">12 位</option>
+            </select>
+        </div>
+
+        <!-- 加密方式 -->
+        <div class="encryption-selector">
+            <label for="encryption">加密方式：</label>
+            <select id="encryption">
+                <option value="none">无加密</option>
+                <option value="md5">MD5</option>
+                <option value="base64">Base64</option>
+                <option value="sha1">SHA-1</option>
+                <option value="sha256">SHA-256</option>
+                <option value="sha512">SHA-512</option>
+            </select>
+        </div>
+
+
     <h2>密码生成器</h2>
-    <!-- 选项 -->
-    <div class="options">
-
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="numbers">
-                <span class="toggle-slider"></span>
-            </div>
-            纯数字
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="letters">
-                <span class="toggle-slider"></span>
-            </div>
-            纯字母
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="numbers-letters">
-                <span class="toggle-slider"></span>
-            </div>
-            数字+字母
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="symbols-letters">
-                <span class="toggle-slider"></span>
-            </div>
-            符号+字母
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="symbols-numbers">
-                <span class="toggle-slider"></span>
-            </div>
-            符号+数字
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="symbols-numbers-letters">
-                <span class="toggle-slider"></span>
-            </div>
-            数字+符号+字母
-        </label>
-        <label>
-            <div class="toggle-switch">
-                <input type="checkbox" id="uppercase-lowercase">
-                <span class="toggle-slider"></span>
-            </div>
-            大小写字母
-        </label>
-        <!-- 一键全选 toggle 开关 -->
-    <label style="grid-column: span 2; margin-bottom: 8px;">
-        <div class="toggle-switch">
-            <input type="checkbox" id="toggle-all">
-            <span class="toggle-slider"></span>
-        </div>
-        一键全选
-    </label>
+ 
+<div class="encryption-section" id="encryption-section" style="display: none;">
+    <h3>加密/解密</h3>
+    <div class="encryption-input">
+        <input type="text" id="encryption-input" placeholder="输入要加密/解密的内容">
+        <button onclick="encryptContent()">加密</button>
+        <button onclick="decryptContent()">解密</button>
     </div>
-
-    <!-- 密码长度 -->
-    <div class="length-selector">
-        <label for="length">密码长度：</label>
-        <select id="length">
-            <option value="8">8 位</option>
-            <option value="7">7 位</option>
-            <option value="6">6 位</option>
-            <option value="5">5 位</option>
-            <option value="9">9 位</option>
-            <option value="10">10 位</option>
-            <option value="11">11 位</option>
-            <option value="12">12 位</option>
-        </select>
-    </div>
-
-    <!-- 加密方式 -->
-    <div class="encryption-selector">
-        <label for="encryption">加密方式：</label>
-        <select id="encryption">
-            <option value="none">无加密</option>
-            <option value="md5">MD5</option>
-            <option value="base64">Base64</option>
-            <option value="sha1">SHA-1</option>
-            <option value="sha256">SHA-256</option>
-            <option value="sha512">SHA-512</option>
-        </select>
-    </div>
-
-    <!-- 密码输出 -->
-    <div class="password-output">
-        <input type="text" id="password-output" readonly>
-        <button onclick="copyPassword()">复制</button>
-    </div>
-
-    <!-- 密码强度 -->
-    <div class="password-strength">
-        <span>密码强度：</span>
-        <span id="strength-indicator">弱</span>
-        <div id="strength-bar"></div>
-    </div>
-
-    <!-- 生成按钮 -->
-    <div class="generate-button">
-        <button onclick="generatePassword()">生成密码</button>
-    </div>
-
-    <!-- 加载动画 -->
-    <div class="loading-animation" id="loading" style="display: none;">
-        生成中...
-    </div>
-
-    <!-- 密码历史 -->
-    <div class="password-history">
-        <h3>密码历史</h3>
-        <ul id="history-list"></ul>
-        <div class="clear-history-button">
-            <button onclick="clearHistory()">清除历史</button>
-        </div>
-        <div class="save-all-history-button">
-            <button onclick="saveAllHistory()">保存所有历史密码</button>
-        </div>
-    </div>
-
-    <!-- 保存密码 -->
-    <div class="save-password">
-        <button onclick="savePassword()">保存密码</button>
-    </div>
-
-    <!-- 暗黑模式切换 -->
-    <div class="dark-mode-toggle">
-        <button onclick="toggleDarkMode()">切换暗黑模式</button>
+    <div class="encryption-output">
+        <input type="text" id="encryption-output" readonly>
+        <button onclick="copyEncryptionOutput()">复制</button>
     </div>
 </div>
 
-<script>
-// 一键全选/取消全选
-function toggleAllOptions(enable) {
-    const checkboxes = [
-        'numbers',
-        'letters',
-        'numbers-letters',
-        'symbols-letters',
-        'symbols-numbers',
-        'symbols-numbers-letters',
-        'uppercase-lowercase'
-    ];
-    checkboxes.forEach(id => {
-        document.getElementById(id).checked = enable;
+        <!-- 密码输出 -->
+        <div class="password-output">
+            <input type="text" id="password-output" readonly>
+            <button onclick="copyPassword()">复制</button>
+        </div>
+
+        <!-- 密码强度 -->
+        <div class="password-strength">
+            <span>密码强度：</span>
+            <span id="strength-indicator">弱</span>
+            <div id="strength-bar"></div>
+        </div>
+
+        <!-- 生成按钮 -->
+        <div class="generate-button">
+            <button onclick="generatePassword()">生成密码</button>
+        </div>
+
+
+
+        <!-- 加载动画 -->
+        <div class="loading-animation" id="loading" style="display: none;">
+            生成中...
+        </div>
+
+        <!-- 密码历史 -->
+        <div class="password-history">
+            <h3>密码历史</h3>
+            <ul id="history-list"></ul>
+            <div class="bottom-buttons">
+                <div class="clear-history-button">
+                    <button onclick="clearHistory()">清除历史</button>
+                </div>
+                <div class="save-all-history-button">
+                    <button onclick="saveAllHistory()">保存所有</button>
+                </div>
+                <div class="save-password">
+                    <button onclick="savePassword()">保存密码</button>
+                </div>
+                <div class="dark-mode-toggle">
+                    <button onclick="toggleDarkMode()">暗黑模式</button>
+                </div>
+            </div>
+
+    <script>
+        // 一键全选/取消全选
+        function toggleAllOptions(enable) {
+            const checkboxes = [
+                'numbers',
+                'letters',
+                'numbers-letters',
+                'symbols-letters',
+                'symbols-numbers',
+                'symbols-numbers-letters',
+                'uppercase-lowercase'
+            ];
+            checkboxes.forEach(id => {
+                document.getElementById(id).checked = enable;
+            });
+        }
+
+        // 监听一键全选 toggle 开关
+        document.getElementById('toggle-all').addEventListener('change', function () {
+            toggleAllOptions(this.checked);
+        });
+
+        // 密码生成逻辑
+        function generatePassword() {
+            const numbers = '0123456789';
+            const letters = 'abcdefghijklmnopqrstuvwxyz';
+            const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+            const uppercaseLetters = letters.toUpperCase();
+
+            let charset = '';
+
+            // 根据选项构建字符集
+            if (document.getElementById('numbers').checked) charset += numbers;
+            if (document.getElementById('letters').checked) charset += letters;
+            if (document.getElementById('numbers-letters').checked) charset += numbers + letters;
+            if (document.getElementById('symbols-letters').checked) charset += symbols + letters;
+            if (document.getElementById('symbols-numbers').checked) charset += symbols + numbers;
+            if (document.getElementById('symbols-numbers-letters').checked) charset += symbols + numbers + letters;
+            if (document.getElementById('uppercase-lowercase').checked) charset += letters + uppercaseLetters;
+
+            if (charset === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '请至少选择一个选项！',
+                    confirmButtonText: '确定'
+                });
+                return;
+            }
+// 选择排除易混淆字符的开关
+const excludeConfusableChars = document.getElementById('exclude-confusable-chars').checked;
+
+// 定义易混淆字符
+const confusableChars = ['0', 'O', 'I', 'l']; // 可以根据需要调整或扩展
+
+// 根据选项构建字符集
+if (document.getElementById('numbers').checked) charset += numbers;
+if (document.getElementById('letters').checked) charset += letters;
+if (document.getElementById('numbers-letters').checked) charset += numbers + letters;
+if (document.getElementById('symbols-letters').checked) charset += symbols + letters;
+if (document.getElementById('symbols-numbers').checked) charset += symbols + numbers;
+if (document.getElementById('symbols-numbers-letters').checked) charset += symbols + numbers + letters;
+if (document.getElementById('uppercase-lowercase').checked) charset += letters + uppercaseLetters;
+
+// 如果排除易混淆字符，过滤掉这些字符
+if (excludeConfusableChars) {
+    confusableChars.forEach(char => {
+        charset = charset.replace(new RegExp(char, 'g'), '');
     });
 }
+            // 生成密码
+            let password = '';
+            const length = parseInt(document.getElementById('length').value);
+            for (let i = 0; i < length; i++) {
+                password += charset[Math.floor(Math.random() * charset.length)];
+            }
 
-// 监听一键全选 toggle 开关
-document.getElementById('toggle-all').addEventListener('change', function () {
-    toggleAllOptions(this.checked);
+         
+
+            // 显示密码
+            document.getElementById('password-output').value = password;
+
+            // 更新强度指示器
+            updateStrengthIndicator(password);
+
+            // 保存到历史记录
+            savePasswordToHistory(password);
+
+            // 隐藏加载动画
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        // 加密逻辑
+        function encryptPassword(password, encryption) {
+            switch (encryption) {
+                case 'md5':
+                    return CryptoJS.MD5(password).toString();
+                case 'base64':
+                    return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(password));
+                case 'sha1':
+                    return CryptoJS.SHA1(password).toString();
+                case 'sha256':
+                    return CryptoJS.SHA256(password).toString();
+                case 'sha512':
+                    return CryptoJS.SHA512(password).toString();
+                default:
+                    return password;
+            }
+        }
+		
+		
+// 监听加密方式选择
+document.getElementById('encryption').addEventListener('change', function () {
+    const encryptionSection = document.getElementById('encryption-section');
+    if (this.value !== 'none') {
+        encryptionSection.style.display = 'block';
+    } else {
+        encryptionSection.style.display = 'none';
+    }
 });
-    // 密码生成逻辑
-    function generatePassword() {
-        const numbers = '0123456789';
-        const letters = 'abcdefghijklmnopqrstuvwxyz';
-        const symbols = '!@#$%^&*()_+-=[]{}|;:,.<>?';
-        const uppercaseLetters = letters.toUpperCase();
 
-        let charset = '';
+// 加密内容
+function encryptContent() {
+    const input = document.getElementById('encryption-input').value;
+    const encryption = document.getElementById('encryption').value;
+    if (!input) {
+        Swal.fire({
+            icon: 'warning',
+            title: '请输入要加密的内容！',
+            confirmButtonText: '确定'
+        });
+        return;
+    }
+    const encrypted = encryptPassword(input, encryption);
+    document.getElementById('encryption-output').value = encrypted;
+}
 
-        // 根据选项构建字符集
-        if (document.getElementById('numbers').checked) charset += numbers;
-        if (document.getElementById('letters').checked) charset += letters;
-        if (document.getElementById('numbers-letters').checked) charset += numbers + letters;
-        if (document.getElementById('symbols-letters').checked) charset += symbols + letters;
-        if (document.getElementById('symbols-numbers').checked) charset += symbols + numbers;
-        if (document.getElementById('symbols-numbers-letters').checked) charset += symbols + numbers + letters;
-        if (document.getElementById('uppercase-lowercase').checked) charset += letters + uppercaseLetters;
+// 解密内容
+function decryptContent() {
+    const input = document.getElementById('encryption-input').value;
+    const encryption = document.getElementById('encryption').value;
+    if (!input) {
+        Swal.fire({
+            icon: 'warning',
+            title: '请输入要解密的内容！',
+            confirmButtonText: '确定'
+        });
+        return;
+    }
+    let decrypted;
+    try {
+        decrypted = decryptPassword(input, encryption);
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: '解密失败！',
+            text: '请检查输入内容或加密方式是否正确。',
+            confirmButtonText: '确定'
+        });
+        return;
+    }
+    document.getElementById('encryption-output').value = decrypted;
+}
 
-if (charset === '') {
+// 解密逻辑
+function decryptPassword(password, encryption) {
+    switch (encryption) {
+        case 'base64':
+            return CryptoJS.enc.Utf8.stringify(CryptoJS.enc.Base64.parse(password));
+        default:
+            throw new Error('不支持的解密方式');
+    }
+}
+
+// 复制加密/解密输出
+function copyEncryptionOutput() {
+    const output = document.getElementById('encryption-output');
+    output.select();
+    document.execCommand('copy');
     Swal.fire({
-        icon: 'warning',
-        title: '请至少选择一个选项！',
+        icon: 'success',
+        title: '内容已复制到剪贴板！',
         confirmButtonText: '确定'
     });
-    return;
 }
 
-        // 生成密码
-        let password = '';
-        const length = parseInt(document.getElementById('length').value);
-        for (let i = 0; i < length; i++) {
-            password += charset[Math.floor(Math.random() * charset.length)];
+        // 复制密码
+        function copyPassword() {
+            const passwordOutput = document.getElementById('password-output');
+            passwordOutput.select();
+            document.execCommand('copy');
+            Swal.fire({
+                icon: 'success',
+                title: '密码已复制到剪贴板！',
+                confirmButtonText: '确定'
+            });
         }
 
-        // 加密
-        const encryption = document.getElementById('encryption').value;
-        if (encryption !== 'none') {
-            password = encryptPassword(password, encryption);
+        // 保存密码到本地
+        function savePassword() {
+            const password = document.getElementById('password-output').value;
+            if (!password) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '没有密码可保存！',
+                    confirmButtonText: '确定'
+                });
+                return;
+            }
+            const blob = new Blob([password], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${password}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
         }
 
-        // 显示密码
-        document.getElementById('password-output').value = password;
-
-        // 更新强度指示器
-        updateStrengthIndicator(password);
-
-        // 保存到历史记录
-        savePasswordToHistory(password);
-
-        // 隐藏加载动画
-        document.getElementById('loading').style.display = 'none';
-    }
-
-    // 加密逻辑
-    function encryptPassword(password, encryption) {
-        switch (encryption) {
-            case 'md5':
-                return CryptoJS.MD5(password).toString();
-            case 'base64':
-                return CryptoJS.enc.Base64.stringify(CryptoJS.enc.Utf8.parse(password));
-            case 'sha1':
-                return CryptoJS.SHA1(password).toString();
-            case 'sha256':
-                return CryptoJS.SHA256(password).toString();
-            case 'sha512':
-                return CryptoJS.SHA512(password).toString();
-            default:
-                return password;
+        // 保存所有历史密码
+        function saveAllHistory() {
+            const history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+            if (history.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: '没有历史密码可保存！',
+                    confirmButtonText: '确定'
+                });
+                return;
+            }
+            const content = history.join('\n');
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'all_history_passwords.txt';
+            a.click();
+            URL.revokeObjectURL(url);
         }
-    }
 
-    // 复制密码
-    function copyPassword() {
-        const passwordOutput = document.getElementById('password-output');
-        passwordOutput.select();
-        document.execCommand('copy');
-        alert('密码已复制到剪贴板！');
-    }
+        // 更新密码强度指示器
+        function updateStrengthIndicator(password) {
+            const strengthBar = document.getElementById('strength-bar');
+            const strengthIndicator = document.getElementById('strength-indicator');
+            let strength = 0;
 
-    // 保存密码到本地
-    function savePassword() {
-        const password = document.getElementById('password-output').value;
-        if (!password) {
-            alert('没有密码可保存！');
-            return;
+            // 根据密码长度和字符种类计算强度
+            if (password.length >= 8) strength += 1;
+            if (password.match(/[A-Z]/)) strength += 1;
+            if (password.match(/[a-z]/)) strength += 1;
+            if (password.match(/[0-9]/)) strength += 1;
+            if (password.match(/[^A-Za-z0-9]/)) strength += 1;
+
+            // 更新强度条和文字
+            const width = (strength / 5) * 100;
+            strengthBar.style.width = `${width}%`;
+            strengthBar.style.backgroundColor = width < 40 ? 'red' : width < 70 ? 'orange' : 'green';
+            strengthIndicator.textContent = width < 40 ? '弱' : width < 70 ? '中' : '强';
         }
-        const blob = new Blob([password], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${password}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-    }
 
-    // 保存所有历史密码
-    function saveAllHistory() {
-        const history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
-        if (history.length === 0) {
-            alert('没有历史密码可保存！');
-            return;
-        }
-        const content = history.join('\n');
-        const blob = new Blob([content], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'all_history_passwords.txt';
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    // 更新密码强度指示器
-    function updateStrengthIndicator(password) {
-        const strengthBar = document.getElementById('strength-bar');
-        const strengthIndicator = document.getElementById('strength-indicator');
-        let strength = 0;
-
-        // 根据密码长度和字符种类计算强度
-        if (password.length >= 8) strength += 1;
-        if (password.match(/[A-Z]/)) strength += 1;
-        if (password.match(/[a-z]/)) strength += 1;
-        if (password.match(/[0-9]/)) strength += 1;
-        if (password.match(/[^A-Za-z0-9]/)) strength += 1;
-
-        // 更新强度条和文字
-        const width = (strength / 5) * 100;
-        strengthBar.style.width = `${width}%`;
-        strengthBar.style.backgroundColor = width < 40 ? 'red' : width < 70 ? 'orange' : 'green';
-        strengthIndicator.textContent = width < 40 ? '弱' : width < 70 ? '中' : '强';
-    }
-
-    // 保存密码到历史记录
-    function savePasswordToHistory(password) {
-        let history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
-        history.unshift(password); // 新密码添加到最前面
-        if (history.length > 10) history.pop(); // 只保留最近10条
-        localStorage.setItem('passwordHistory', JSON.stringify(history));
-        updateHistoryList();
-    }
-
-    // 更新历史记录列表
-    function updateHistoryList() {
-        const history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
-        const historyList = document.getElementById('history-list');
-        historyList.innerHTML = history.map(pwd => `<li>${pwd}</li>`).join('');
-    }
-
-// 清除历史记录
-function clearHistory() {
-    Swal.fire({
-        title: '确定要清除所有历史密码吗？',
-        text: '此操作不可恢复！',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '确定',
-        cancelButtonText: '取消'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            localStorage.removeItem('passwordHistory');
+        // 保存密码到历史记录
+        function savePasswordToHistory(password) {
+            let history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+            history.unshift(password); // 新密码添加到最前面
+            if (history.length > 10) history.pop(); // 只保留最近10条
+            localStorage.setItem('passwordHistory', JSON.stringify(history));
             updateHistoryList();
-            Swal.fire('已清除！', '历史密码已清除。', 'success');
         }
+
+        // 更新历史记录列表
+        function updateHistoryList() {
+            const history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+            const historyList = document.getElementById('history-list');
+            historyList.innerHTML = history.map(pwd => `
+                <li>
+                    ${pwd}
+                    <!-- 修改历史记录项中的按钮 -->
+                    <div class="history-item-actions">
+                        <button class="save" onclick="saveSinglePassword('${pwd}')">保存</button>
+                        <button class="delete" onclick="deleteSinglePassword('${pwd}')">删除</button>
+                     <button class="qrcode" onclick="generateQrcode('${pwd}')">二维码</button>
+                    </div>
+                </li>
+            `).join('');
+        }
+
+        // 保存单条历史密码
+        function saveSinglePassword(password) {
+            const blob = new Blob([password], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${password}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+      // 删除单条历史密码
+      function deleteSinglePassword(password) {
+          Swal.fire({
+              title: '确定要删除这条密码吗？',
+              text: '此操作不可恢复！',
+              icon: 'warning',
+              showCancelButton: true,
+              confirmButtonText: '确定',
+              cancelButtonText: '取消'
+          }).then((result) => {
+              if (result.isConfirmed) {
+                  let history = JSON.parse(localStorage.getItem('passwordHistory')) || [];
+                  history = history.filter(pwd => pwd !== password);
+                  localStorage.setItem('passwordHistory', JSON.stringify(history));
+                  updateHistoryList();
+                  Swal.fire('已删除！', '密码已删除。', 'success');
+              }
+          });
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+// 生成二维码
+function generateQrcode(password) {
+    // 生成二维码（使用 qrcode.js）
+    QRCode.toCanvas(document.createElement('canvas'), password, { width: 200 }, function(error, canvas) {
+        if (error) {
+            console.error('生成二维码失败：', error);
+            return;
+        }
+
+        // 使用 SweetAlert2 弹出二维码
+        Swal.fire({
+            title: '二维码',
+            icon: 'info',
+            html: `
+                <div style="text-align: center;">
+                    <img src="${canvas.toDataURL()}" style="width: 200px; height: 200px;">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '保存',
+            cancelButtonText: '取消',
+            customClass: {
+                popup: 'swal-wide' // 可选：自定义对话框样式
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // 保存二维码为图片文件，使用密码作为文件名
+                saveQrcode(canvas.toDataURL(), password);
+            }
+        });
     });
 }
 
+// 保存二维码
+function saveQrcode(imageDataUrl, password) {
+    // 保存二维码为图片文件，使用密码作为文件名
+    const blob = dataURItoBlob(imageDataUrl);
+    const fileName = validateFileName(password) ? sanitizeFileName(password) : 'qrcode';
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${fileName}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
 
-
-    // 切换暗黑模式
-    function toggleDarkMode() {
-        document.body.classList.toggle('dark-mode');
+// 将 Data URL 转换为 Blob
+function dataURItoBlob(dataURI) {
+    const byteString = window.atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
     }
+    return new Blob([ab], { type: mimeString });
+}
 
-    // 初始化历史记录
-    updateHistoryList();
-</script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+// 验证文件名是否合法
+function validateFileName(fileName) {
+    const invalidChars = /[<>:"/\\|?*]/;
+    return fileName !== '' && !invalidChars.test(fileName);
+}
+
+// 清理文件名中的非法字符
+function sanitizeFileName(fileName) {
+    return fileName.replace(/[<>:"/\\|?*]/g, '');
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+// 将 Data URL 转换为 Blob
+function dataURItoBlob(dataURI) {
+    const byteString = window.atob(dataURI.split(',')[1]);
+    const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    return new Blob([ab], { type: mimeString });
+}
+
+
+
+        // 清除历史记录
+        function clearHistory() {
+            Swal.fire({
+                title: '确定要清除所有历史密码吗？',
+                text: '此操作不可恢复！',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: '确定',
+                cancelButtonText: '取消'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    localStorage.removeItem('passwordHistory');
+                    updateHistoryList();
+                    Swal.fire('已清除！', '历史密码已清除。', 'success');
+                }
+            });
+        }
+
+        // 切换暗黑模式
+              function toggleDarkMode() {
+                  document.body.classList.toggle('dark-mode');
+                  const isDarkMode = document.body.classList.contains('dark-mode');
+                  localStorage.setItem('darkMode', isDarkMode);
+              }
+      
+              // 页面加载时检查本地存储中的暗黑模式状态
+              window.onload = () => {
+                  const isDarkMode = localStorage.getItem('darkMode') === 'true';
+                  if (isDarkMode) {
+                      document.body.classList.add('dark-mode');
+                  }
+              };
+
+        // 初始化历史记录
+        updateHistoryList();
+    </script>
+	
+	
+	<footer>
+	  当前版本：<span id="current-version"></span> | 最新版本：<span id="latest-version">加载中...</span>
+	</footer>
+	
+	<script>
+	  // 当前版本号
+	  const currentVersion = "1.0.2";
+	  document.getElementById("current-version").innerText = currentVersion;
+	
+	  
+	  // 获取最新版本号
+	  // 版本信息所需文件
+	  fetch("https://cdn.jsdelivr.net/gh/ix520/password/response.json")
+	  
+	    .then(response => response.json())
+	    .then(data => {
+	      const latestVersion = data.latest_version;
+	      document.getElementById("latest-version").innerText = latestVersion;
+	
+	      // 版本不一致时，用不同样式标注
+	      if (latestVersion !== currentVersion) {
+	        document.getElementById("latest-version").style.color = "red"; // 用红色显示
+	      }
+	    })
+	    .catch(error => {
+	      console.error("无法获取最新版本信息喵~", error);
+	      document.getElementById("latest-version").innerText = "获取失败";
+	    });
+	</script>
 </body>
 </html>
